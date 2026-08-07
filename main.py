@@ -1078,10 +1078,13 @@ class App(ctk.CTk):
             def record_task():
                 self.log_queue.put("🎥 Grabación iniciada en el dispositivo móvil (máximo 3 minutos)...")
                 # Limpiar archivo previo
-                ADBManager.run_command(["adb", "-s", dev, "shell", "rm", "/sdcard/video.mp4"])
+                subprocess.run([ADB_PATH, "-s", dev, "shell", "rm", "/sdcard/video.mp4"], capture_output=True)
                 
                 # Inicia de forma persistente hasta 180 seg
-                ADBManager.run_command(["adb", "-s", dev, "shell", "screenrecord", "--time-limit", "180", "/sdcard/video.mp4"])
+                try:
+                    subprocess.run([ADB_PATH, "-s", dev, "shell", "screenrecord", "--time-limit", "180", "/sdcard/video.mp4"], capture_output=True, timeout=190)
+                except subprocess.TimeoutExpired:
+                    pass
                 
                 # Si termina solo por timeout
                 if self.is_recording:
@@ -1401,12 +1404,64 @@ class App(ctk.CTk):
             self.log_queue.put(f"🖥️ Lanzando espejo de pantalla (scrcpy) para {dev}...")
             # Iniciamos scrcpy con algunos parámetros útiles para rendimiento en WiFi/USB
             cmd = [SCRCPY_PATH, "-s", dev, "--window-title", f"Espejo ADB - {dev}", "--always-on-top"]
-            stdout, stderr, code = ADBManager.run_command(cmd)
-            if code != 0:
-                self.log_queue.put(f"❌ Fallo al iniciar Scrcpy: {stderr or stdout}")
+            
+            try:
+                # Usamos subprocess.Popen con pipes para capturar la salida en tiempo real sin bloquear la UI ni matar el proceso
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    text=True
+                )
+                
+                # Lista para acumular la salida/errores iniciales en caso de fallo rápido
+                output_lines = []
+                
+                # Hilos para consumir la salida estándar y de errores para no llenar el buffer
+                def read_stream(stream, is_stderr):
+                    try:
+                        for line in stream:
+                            clean_line = line.strip()
+                            if clean_line:
+                                output_lines.append(clean_line)
+                                prefix = "❌ [Scrcpy Err]" if is_stderr else "🖥️ [Scrcpy]"
+                                self.log_queue.put(f"{prefix} {clean_line}")
+                    except Exception:
+                        pass
+                    finally:
+                        try:
+                            stream.close()
+                        except Exception:
+                            pass
+                
+                t_out = threading.Thread(target=read_stream, args=(process.stdout, False), daemon=True)
+                t_err = threading.Thread(target=read_stream, args=(process.stderr, True), daemon=True)
+                t_out.start()
+                t_err.start()
+                
+                # Esperar 2 segundos para ver si el proceso termina rápido con un código de error
+                time.sleep(2.0)
+                
+                if process.poll() is not None:
+                    code = process.returncode
+                    if code != 0:
+                        error_msg = "\n".join(output_lines)
+                        self.log_queue.put(f"❌ Fallo al iniciar Scrcpy (código {code}): {error_msg}")
+                        self.after(0, lambda: messagebox.showerror(
+                            "Error de Scrcpy",
+                            f"No se pudo iniciar Scrcpy:\n\n{error_msg}\n\nVerifica que esté instalado en su Mac."
+                        ))
+            except FileNotFoundError:
+                self.log_queue.put(f"❌ Fallo al iniciar Scrcpy: No se encontró el ejecutable en '{SCRCPY_PATH}'.")
                 self.after(0, lambda: messagebox.showerror(
                     "Error de Scrcpy",
-                    f"No se pudo iniciar Scrcpy:\n\n{stderr or stdout}\n\nVerifica que esté instalado en su Mac."
+                    f"No se pudo iniciar Scrcpy:\n\nNo se encontró el ejecutable 'scrcpy' en: {SCRCPY_PATH}\n\nVerifica que esté instalado en su Mac."
+                ))
+            except Exception as e:
+                self.log_queue.put(f"❌ Fallo al iniciar Scrcpy: {str(e)}")
+                self.after(0, lambda: messagebox.showerror(
+                    "Error de Scrcpy",
+                    f"Error al iniciar Scrcpy:\n\n{str(e)}"
                 ))
                 
         threading.Thread(target=launch_scrcpy, daemon=True).start()
