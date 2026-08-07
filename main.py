@@ -193,7 +193,7 @@ class App(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
         
         # ----------------- SIDEBAR -----------------
-        sidebar = ctk.CTkFrame(self, corner_radius=0, fg_color="#1e1e24")
+        sidebar = ctk.CTkFrame(self, corner_radius=0, fg_color=("#f1f2f6", "#1e1e24"))
         sidebar.grid(row=0, column=0, sticky="nsew")
         sidebar.grid_columnconfigure(0, weight=1)
         sidebar.grid_rowconfigure(6, weight=1) # Espacio intermedio
@@ -202,7 +202,7 @@ class App(ctk.CTk):
         ctk.CTkLabel(sidebar, text="ADB NEXUS PRO", font=ctk.CTkFont(size=20, weight="bold", family="Helvetica"), text_color="#9b59b6").grid(row=0, column=0, padx=20, pady=(25, 20))
         
         # Selector de Dispositivo
-        ctk.CTkLabel(sidebar, text="Dispositivo:", font=ctk.CTkFont(size=12, weight="bold"), text_color="#b2bec3").grid(row=1, column=0, padx=20, pady=(10, 2), sticky="w")
+        ctk.CTkLabel(sidebar, text="Dispositivo:", font=ctk.CTkFont(size=12, weight="bold"), text_color=("#57606f", "#b2bec3")).grid(row=1, column=0, padx=20, pady=(10, 2), sticky="w")
         self.combo_dev = ctk.CTkComboBox(sidebar, state="readonly", command=self._on_device_change)
         self.combo_dev.grid(row=2, column=0, padx=20, pady=5, sticky="ew")
         
@@ -261,7 +261,7 @@ class App(ctk.CTk):
         self.dash_labels = {}
         for idx, (title, key, default) in enumerate(labels, start=1):
             ctk.CTkLabel(frame_info, text=title, font=ctk.CTkFont(weight="bold")).grid(row=idx, column=0, padx=15, pady=10, sticky="w")
-            lbl = ctk.CTkLabel(frame_info, text=default, text_color="#bdc3c7")
+            lbl = ctk.CTkLabel(frame_info, text=default, text_color=("#2f3542", "#bdc3c7"))
             lbl.grid(row=idx, column=1, padx=15, pady=10, sticky="w")
             self.dash_labels[key] = lbl
             
@@ -279,7 +279,7 @@ class App(ctk.CTk):
         self.bar_battery.grid(row=2, column=0, padx=15, pady=5, sticky="ew")
         self.bar_battery.set(0)
         
-        self.lbl_battery_detail = ctk.CTkLabel(frame_right, text="Temp: -- | Estado: --", text_color="#bdc3c7")
+        self.lbl_battery_detail = ctk.CTkLabel(frame_right, text="Temp: -- | Estado: --", text_color=("#2f3542", "#bdc3c7"))
         self.lbl_battery_detail.grid(row=3, column=0, padx=15, pady=5, sticky="w")
         
         # Separador / Acciones
@@ -453,7 +453,7 @@ class App(ctk.CTk):
             "3. Haga clic en el botón de abajo.\n"
             "4. Cuando la consola confirme la conexión, desconecte el cable."
         )
-        ctk.CTkLabel(frame_auto, text=instructions, justify="left", text_color="#bdc3c7", font=ctk.CTkFont(size=12)).grid(row=1, column=0, padx=15, pady=10, sticky="w")
+        ctk.CTkLabel(frame_auto, text=instructions, justify="left", anchor="w", text_color=("#2f3542", "#bdc3c7"), font=ctk.CTkFont(size=12)).grid(row=1, column=0, padx=15, pady=10, sticky="ew")
         
         self.btn_auto_wifi = ctk.CTkButton(frame_auto, text="⚡ Activar ADB WiFi Automático", fg_color="#27ae60", hover_color="#218c53", height=45, command=self._auto_wireless_connect)
         self.btn_auto_wifi.grid(row=2, column=0, padx=15, pady=20, sticky="ew")
@@ -528,8 +528,12 @@ class App(ctk.CTk):
         self.btn_ext_terminal = ctk.CTkButton(frame_controls, text="🐚 Abrir Terminal Shell", fg_color="#9b59b6", hover_color="#8e44ad", width=140, command=self._open_external_shell)
         self.btn_ext_terminal.grid(row=0, column=6, padx=10, pady=10)
         
+        # Etiqueta de App Seleccionada para logs
+        self.lbl_logs_selected_app = ctk.CTkLabel(frame_controls, text="App seleccionada para filtrado: Ninguna (selecciona una app en 'Control de Apps')", font=ctk.CTkFont(weight="bold", size=11), text_color=("#2f3542", "#bdc3c7"), anchor="w")
+        self.lbl_logs_selected_app.grid(row=1, column=0, columnspan=7, padx=15, pady=(0, 10), sticky="w")
+        
         # Visualizador de Logs
-        self.text_logs = ctk.CTkTextbox(self.tab_logs, state="disabled", font=ctk.CTkFont(family="Menlo", size=11), fg_color="#1a1a24")
+        self.text_logs = ctk.CTkTextbox(self.tab_logs, state="disabled", font=ctk.CTkFont(family="Menlo", size=11), fg_color=("#f8f9fa", "#1a1a24"))
         self.text_logs.grid(row=1, column=0, padx=10, pady=5, sticky="nsew")
         
         # Buscador / Filtro rápido por texto
@@ -659,6 +663,7 @@ class App(ctk.CTk):
         for w in self.scroll_favs.winfo_children(): w.destroy()
         for w in self.scroll_installed.winfo_children(): w.destroy()
         self.lbl_selected_app_action.configure(text="App Seleccionada: Ninguna")
+        self.lbl_logs_selected_app.configure(text="App seleccionada para filtrado: Ninguna (selecciona una app en 'Control de Apps')", text_color="#bdc3c7")
         self.selected_package = None
         self._toggle_action_buttons(False)
 
@@ -695,6 +700,37 @@ class App(ctk.CTk):
         # Dibujar listados de Apps
         self._refresh_favorites_list()
         self._refresh_installed_list()
+        
+        # Selección inteligente de App al cambiar de dispositivo
+        fg_app = details.get("foreground_app")
+        if fg_app and fg_app != "Ninguna / Pantalla apagada" and fg_app != "unknown":
+            # Si la app activa coincide con una de nuestras favoritas, la autoseleccionamos
+            matched_fav_name = None
+            for name, pkg in APPS.items():
+                if pkg == fg_app:
+                    matched_fav_name = name
+                    break
+            
+            if matched_fav_name:
+                self._select_app_for_action(fg_app, matched_fav_name)
+            elif self.selected_package and self.selected_package in self.installed_packages:
+                # Mantener la selección anterior si está instalada en el nuevo dispositivo
+                pass
+            else:
+                # Resetear selección si no coincide con favorita y la anterior no está instalada
+                self.selected_package = None
+                self.lbl_selected_app_action.configure(text="App Seleccionada: Ninguna")
+                self.lbl_logs_selected_app.configure(text="App seleccionada para filtrado: Ninguna (selecciona una app en 'Control de Apps')", text_color="#bdc3c7")
+                self._toggle_action_buttons(False)
+        else:
+            if self.selected_package and self.selected_package in self.installed_packages:
+                # Mantener selección anterior si está instalada
+                pass
+            else:
+                self.selected_package = None
+                self.lbl_selected_app_action.configure(text="App Seleccionada: Ninguna")
+                self.lbl_logs_selected_app.configure(text="App seleccionada para filtrado: Ninguna (selecciona una app en 'Control de Apps')", text_color="#bdc3c7")
+                self._toggle_action_buttons(False)
 
     # ===================== LOGICA DE APPS (FAVORITAS E INSTALADAS) =====================
     def _refresh_favorites_list(self):
@@ -726,8 +762,8 @@ class App(ctk.CTk):
                 text=status_text, 
                 anchor="w", 
                 fg_color="transparent", 
-                hover_color="#2c3e50", 
-                text_color="white",
+                hover_color=("#dfe4ea", "#2c3e50"), 
+                text_color=("#1e1e24", "#ffffff"),
                 command=lambda p=package, n=name: self._select_app_for_action(p, n)
             )
             btn_select.grid(row=0, column=0, sticky="ew", padx=5)
@@ -792,8 +828,8 @@ class App(ctk.CTk):
                 text=pkg,
                 anchor="w",
                 fg_color="transparent",
-                hover_color="#2c3e50",
-                text_color="#bdc3c7",
+                hover_color=("#dfe4ea", "#2c3e50"),
+                text_color=("#2c3e50", "#bdc3c7"),
                 font=ctk.CTkFont(size=11),
                 command=lambda p=pkg: self._select_app_for_action(p)
             )
@@ -806,6 +842,7 @@ class App(ctk.CTk):
         self.selected_package = package
         display_name = friendly_name or package
         self.lbl_selected_app_action.configure(text=f"App Seleccionada: {display_name} ({package})")
+        self.lbl_logs_selected_app.configure(text=f"App seleccionada para filtrado: {display_name} ({package})", text_color="#9b59b6")
         self._toggle_action_buttons(True)
         self.btn_add_fav.configure(state="normal")
 
@@ -1173,20 +1210,29 @@ class App(ctk.CTk):
         level = self.combo_log_level.get().split("(")[1].split(")")[0] # Captura V, D, I, W, E
         
         def log_reader():
-            # Construir comando
-            cmd = [ADB_PATH, "-s", dev, "logcat", f"*:{level}", "-v", "time"]
+            # Construir mapa inicial de procesos PID -> NOMBRE
+            process_map = {}
+            try:
+                out_ps, _, _ = ADBManager.run_command(["adb", "-s", dev, "shell", "ps", "-A"])
+                lines_ps = out_ps.strip().split("\n")
+                if len(lines_ps) > 1:
+                    headers = lines_ps[0].split()
+                    if "PID" in headers and "NAME" in headers:
+                        pid_idx = headers.index("PID")
+                        name_idx = headers.index("NAME")
+                        for l in lines_ps[1:]:
+                            parts = l.split()
+                            if len(parts) > max(pid_idx, name_idx):
+                                process_map[parts[pid_idx]] = parts[name_idx]
+            except Exception:
+                pass
+
+            # Construir comando con formato year y threadtime
+            cmd = [ADB_PATH, "-s", dev, "logcat", f"*:{level}", "-v", "year", "-v", "threadtime"]
             
-            # Si filtramos por PID de app
+            # Si filtrado por App está activo, informamos en consola
             if self.logcat_filter_app and self.selected_package:
-                # Buscar PID de la app activa
-                pid_out, _, _ = ADBManager.run_command(["adb", "-s", dev, "shell", "pidof", self.selected_package])
-                pid = pid_out.strip()
-                if pid:
-                    # ADB logcat en versiones modernas soporta --pid
-                    self.log_queue.put(f"🔍 Filtrando Logs para paquete {self.selected_package} (PID: {pid})")
-                    cmd = [ADB_PATH, "-s", dev, "logcat", f"*:{level}", "--pid", pid, "-v", "time"]
-                else:
-                    self.log_queue.put(f"⚠️ App {self.selected_package} no está corriendo. Desactivando filtro de PID.")
+                self.log_queue.put(f"🔍 Filtrando Logs en tiempo real para: {self.selected_package}")
                     
             try:
                 # Limpiar buffer de logcat antes
@@ -1206,7 +1252,51 @@ class App(ctk.CTk):
                     if txt_filter and txt_filter not in line.lower():
                         continue
                         
-                    self.log_queue.put(line.strip())
+                    # Intentar dar formato avanzado de Android Studio
+                    formatted_line = line.strip()
+                    try:
+                        match = re.match(r"^(\d{4}-\d{2}-\d{2})\s+(\d{2}:\d{2}:\d{2}\.\d{3})\s+(\d+)\s+(\d+)\s+([VDIWEF])\s+(.*)$", formatted_line)
+                        if match:
+                            date, time_str, pid, tid, level_char, rest = match.groups()
+                            
+                            # Obtener proceso de caché o consulta dinámica rápida
+                            process_name = process_map.get(pid)
+                            if not process_name:
+                                proc_out, _, _ = ADBManager.run_command(["adb", "-s", dev, "shell", "cat", f"/proc/{pid}/cmdline"])
+                                process_name = proc_out.strip().replace("\x00", "") or "unknown"
+                                process_map[pid] = process_name
+                                
+                            package_name = process_name.split(":")[0]
+                            
+                            # Filtrado estricto por App si está activo
+                            if self.logcat_filter_app and self.selected_package:
+                                if package_name != self.selected_package and not process_name.startswith(self.selected_package):
+                                    continue
+                            
+                            pid_tid = f"{pid}-{tid}"
+                            col3_width = 24
+                            col4_width = 37
+                            
+                            # Truncar si excede el ancho para mantener la alineación de columnas perfecta
+                            proc_disp = process_name
+                            if len(proc_disp) > col3_width:
+                                proc_disp = proc_disp[:col3_width-3] + "..."
+                            col3 = f"{proc_disp:<{col3_width}}"
+                            
+                            pkg_disp = package_name
+                            if len(pkg_disp) > col4_width:
+                                pkg_disp = pkg_disp[:col4_width-3] + "..."
+                            col4 = f"{pkg_disp:<{col4_width}}"
+                            
+                            formatted_line = f"{date} {time_str} {pid_tid:>11} {col3} {col4} {level_char}  {rest}"
+                        else:
+                            # Si es una línea divisora (ej. --------- beginning of main) y el filtro de app está activo, la omitimos
+                            if self.logcat_filter_app and self.selected_package:
+                                continue
+                    except Exception:
+                        pass
+                        
+                    self.log_queue.put(formatted_line)
             except Exception as e:
                 self.log_queue.put(f"❌ Error en lectura de logs: {str(e)}")
             finally:
