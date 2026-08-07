@@ -1,0 +1,12 @@
+{
+    "apps": {
+        "KP Drink": "com.perfect.kpdrink",
+        "KP Grill": "com.perfect.kpgrill",
+        "KP Fry": "com.perfect.kpfry",
+        "KP Prep C": "com.perfect.kpprepc",
+        "KP Make": "com.perfect.kpmake",
+        "KP Pack": "com.perfect.pack",
+        "KP Prep TB": "com.perfect.kppreptb",
+        "KP Queue": "com.perfect.kpqueue"
+    }
+}
