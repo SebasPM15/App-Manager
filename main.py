@@ -48,7 +48,7 @@ ctk.set_default_color_theme("blue")
 # ===================== LÓGICA ADB (THREAD-SAFE) =====================
 class ADBManager:
     @staticmethod
-    def run_command(cmd):
+    def run_command(cmd, timeout=12):
         """Ejecuta un comando subprocess de forma síncrona y segura."""
         # Reemplazar adb/scrcpy con rutas completas si es necesario
         if cmd[0] == "adb":
@@ -56,7 +56,7 @@ class ADBManager:
         elif cmd[0] == "scrcpy":
             cmd[0] = SCRCPY_PATH
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=12)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             return result.stdout.strip(), result.stderr.strip(), result.returncode
         except subprocess.TimeoutExpired:
             return "", "Tiempo de espera agotado", -1
@@ -956,7 +956,7 @@ class App(ctk.CTk):
             self.log_queue.put(f"📦 Instalando APK: {os.path.basename(filepath)}")
             self.after(200, lambda: self.prog_install.set(0.4))
             
-            stdout, stderr, code = ADBManager.run_command(["adb", "-s", dev, "install", "-r", filepath])
+            stdout, stderr, code = ADBManager.run_command(["adb", "-s", dev, "install", "-r", filepath], timeout=300)
             
             if code == 0:
                 self.log_queue.put(f"✅ APK instalado con éxito: {os.path.basename(filepath)}")
@@ -1056,7 +1056,7 @@ class App(ctk.CTk):
                 dest_path = os.path.expanduser(f"~/Desktop/{filename}")
                 
                 # Extraer video
-                stdout, stderr, code = ADBManager.run_command(["adb", "-s", dev, "pull", "/sdcard/video.mp4", dest_path])
+                stdout, stderr, code = ADBManager.run_command(["adb", "-s", dev, "pull", "/sdcard/video.mp4", dest_path], timeout=120)
                 if code == 0:
                     self.log_queue.put(f"✅ Video guardado en: {dest_path}")
                     ADBManager.run_command(["adb", "-s", dev, "shell", "rm", "/sdcard/video.mp4"])
