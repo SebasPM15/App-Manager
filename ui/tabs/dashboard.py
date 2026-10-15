@@ -1,12 +1,13 @@
 import customtkinter as ctk
 from ui.theme import Colors, Fonts, Dims
-from ui.widgets import font, make_panel, make_eyebrow, make_status_dot, make_icon_tile, bind_click
+from ui.icons import icon
+from ui.widgets import Label, Box, font, make_panel, make_eyebrow, make_status_dot, make_icon_tile, bind_click
 
 QUICK_ACTIONS = [
-    ("scrcpy",     "Abrir Scrcpy",        "Iniciar espejo de pantalla", "▶", Colors.ICON_VIOLET),
-    ("screenshot", "Tomar captura",       "Guardar pantalla actual",    "◉", Colors.ICON_BLUE),
-    ("sync_time",  "Sincronizar hora",    "Ajustar fecha y hora",       "◷", Colors.ICON_AMBER),
-    ("reboot",     "Reiniciar",           "Reiniciar dispositivo",      "⟳", Colors.ICON_RED),
+    ("scrcpy",     "Abrir Scrcpy",        "Iniciar espejo de pantalla", "play", Colors.ICON_VIOLET),
+    ("screenshot", "Tomar captura",       "Guardar pantalla actual",    "camera", Colors.ICON_BLUE),
+    ("sync_time",  "Sincronizar hora",    "Ajustar fecha y hora",       "clock", Colors.ICON_AMBER),
+    ("reboot",     "Reiniciar",           "Reiniciar dispositivo",      "power", Colors.ICON_RED),
 ]
 
 DETAIL_FIELDS = [
@@ -32,7 +33,7 @@ class DashboardTab(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=2, uniform="dash")
         self.grid_rowconfigure(0, weight=1)
 
-        main = ctk.CTkFrame(self, fg_color="transparent")
+        main = Box(self, fg_color="transparent")
         main.grid(row=0, column=0, padx=(0, 11), sticky="nsew")
         main.grid_columnconfigure(0, weight=1)
 
@@ -40,13 +41,13 @@ class DashboardTab(ctk.CTkFrame):
         overview.grid(row=0, column=0, sticky="ew")
         overview.grid_columnconfigure(0, weight=1)
 
-        head = ctk.CTkFrame(overview, fg_color="transparent")
+        head = Box(overview, fg_color="transparent")
         head.grid(row=0, column=0, padx=20, pady=(18, 0), sticky="ew")
         head.grid_columnconfigure(0, weight=1)
-        title = ctk.CTkFrame(head, fg_color="transparent")
+        title = Box(head, fg_color="transparent")
         title.grid(row=0, column=0, sticky="w")
         make_eyebrow(title, "Información del dispositivo").pack(anchor="w")
-        self.lbl_title = ctk.CTkLabel(title, text="Sin dispositivo", font=font(Fonts.SIZE_LG, "bold"), text_color=Colors.TEXT, anchor="w")
+        self.lbl_title = Label(title, text="Sin dispositivo", font=font(Fonts.SIZE_LG, "bold"), text_color=Colors.TEXT, anchor="w")
         self.lbl_title.pack(anchor="w", pady=(5, 0))
 
         pill = ctk.CTkFrame(head, fg_color=Colors.GREEN_DIM, corner_radius=5)
@@ -54,10 +55,10 @@ class DashboardTab(ctk.CTkFrame):
         self.pill_dot = make_status_dot(pill)
         self.pill_dot.configure(fg_color="transparent")
         self.pill_dot.pack(side="left", padx=(8, 0), pady=4)
-        self.pill_text = ctk.CTkLabel(pill, text="Desconectado", font=font(Fonts.SIZE_XS), text_color="#79d0a4")
+        self.pill_text = Label(pill, text="Desconectado", font=font(Fonts.SIZE_XS), text_color="#79d0a4")
         self.pill_text.pack(side="left", padx=(4, 8))
 
-        details = ctk.CTkFrame(overview, fg_color="transparent")
+        details = Box(overview, fg_color="transparent")
         details.grid(row=1, column=0, padx=20, pady=(24, 22), sticky="ew")
         details.grid_columnconfigure(0, weight=0)
         details.grid_columnconfigure(1, weight=1)
@@ -70,78 +71,78 @@ class DashboardTab(ctk.CTkFrame):
         visual.grid_propagate(False)
         visual.grid_columnconfigure(0, weight=1)
         visual.grid_rowconfigure((0, 3), weight=1)
-        ctk.CTkLabel(visual, text="▯", font=font(40), text_color="#7ea8dd").grid(row=1, column=0, pady=(14, 0))
-        self.lbl_visual = ctk.CTkLabel(visual, text="Android", font=font(Fonts.SIZE_XS), text_color="#8297af")
+        Label(visual, text="", image=icon("smartphone", 44, "#7ea8dd"), width=48, height=48).grid(row=1, column=0, pady=(14, 0))
+        self.lbl_visual = Label(visual, text="Android", font=font(Fonts.SIZE_XS), text_color="#8297af")
         self.lbl_visual.grid(row=2, column=0, pady=(0, 14))
 
-        grid = ctk.CTkFrame(details, fg_color="transparent")
+        grid = Box(details, fg_color="transparent")
         grid.grid(row=0, column=1, sticky="ew")
         for col in range(3):
             grid.grid_columnconfigure(col, weight=1, uniform="fields")
         for idx, (key, label) in enumerate(DETAIL_FIELDS):
-            cell = ctk.CTkFrame(grid, fg_color="transparent")
+            cell = Box(grid, fg_color="transparent")
             cell.grid(row=idx // 3, column=idx % 3, sticky="nw", pady=(0, 18))
-            ctk.CTkLabel(cell, text=label, font=font(Fonts.SIZE_XS), text_color="#718399", anchor="w").pack(anchor="w")
-            value = ctk.CTkLabel(cell, text="—", font=font(Fonts.SIZE_SM), text_color=Colors.TEXT_SOFT, anchor="w", wraplength=130, justify="left")
+            Label(cell, text=label, font=font(Fonts.SIZE_XS), text_color="#718399", anchor="w").pack(anchor="w")
+            value = Label(cell, text="—", font=font(Fonts.SIZE_SM), text_color=Colors.TEXT_SOFT, anchor="w", wraplength=130, justify="left")
             value.pack(anchor="w", pady=(4, 0))
             self._values[key] = value
 
-        heading = ctk.CTkFrame(main, fg_color="transparent")
+        heading = Box(main, fg_color="transparent")
         heading.grid(row=1, column=0, pady=(24, 12), sticky="ew")
-        ctk.CTkLabel(heading, text="Acciones rápidas", font=font(Fonts.SIZE_MD, "bold"), text_color=Colors.TEXT, anchor="w").pack(anchor="w")
-        ctk.CTkLabel(heading, text="Operaciones frecuentes sobre el dispositivo.", font=font(Fonts.SIZE_XS), text_color="#8191a5", anchor="w").pack(anchor="w", pady=(4, 0))
+        Label(heading, text="Acciones rápidas", font=font(Fonts.SIZE_MD, "bold"), text_color=Colors.TEXT, anchor="w").pack(anchor="w")
+        Label(heading, text="Operaciones frecuentes sobre el dispositivo.", font=font(Fonts.SIZE_XS), text_color="#8191a5", anchor="w").pack(anchor="w", pady=(4, 0))
 
-        quick = ctk.CTkFrame(main, fg_color="transparent")
+        quick = Box(main, fg_color="transparent")
         quick.grid(row=2, column=0, sticky="ew")
         quick.grid_columnconfigure((0, 1, 2, 3), weight=1, uniform="quick")
-        for col, (key, title_text, subtitle, glyph, colors) in enumerate(QUICK_ACTIONS):
+        for col, (key, title_text, subtitle, icon_name, colors) in enumerate(QUICK_ACTIONS):
             card = ctk.CTkFrame(quick, fg_color=Colors.CARD, border_width=1, border_color="#23384e", corner_radius=8, height=112)
             card.grid(row=0, column=col, padx=(0 if col == 0 else 4, 0 if col == 3 else 4), sticky="nsew")
             card.grid_propagate(False)
-            make_icon_tile(card, glyph, colors, size=29).place(x=14, y=14)
-            ctk.CTkLabel(card, text=title_text, font=font(Fonts.SIZE_SM, "bold"), text_color=Colors.TEXT, anchor="w").place(x=14, y=56)
-            ctk.CTkLabel(card, text=subtitle, font=font(Fonts.SIZE_XS), text_color="#778ba1", anchor="w", wraplength=120, justify="left").place(x=14, y=76)
+            make_icon_tile(card, icon_name, colors, size=29).place(x=14, y=14)
+            Label(card, text=title_text, font=font(Fonts.SIZE_SM, "bold"), text_color=Colors.TEXT, anchor="w").place(x=14, y=56)
+            Label(card, text=subtitle, font=font(Fonts.SIZE_XS), text_color="#778ba1", anchor="w", wraplength=120, justify="left").place(x=14, y=76)
             bind_click(card, self._cb.get(key, lambda: None), hover_target=card, normal=Colors.CARD, hover=Colors.CARD_HOVER)
 
         foreground = make_panel(main)
         foreground.grid(row=3, column=0, pady=(21, 0), sticky="ew")
         foreground.grid_columnconfigure(0, weight=1)
-        fg_copy = ctk.CTkFrame(foreground, fg_color="transparent")
+        fg_copy = Box(foreground, fg_color="transparent")
         fg_copy.grid(row=0, column=0, padx=17, pady=14, sticky="w")
         make_eyebrow(fg_copy, "Aplicación en primer plano").pack(anchor="w")
-        self.lbl_foreground = ctk.CTkLabel(fg_copy, text="—", font=font(Fonts.SIZE_BASE), text_color=Colors.TEXT, anchor="w")
+        self.lbl_foreground = Label(fg_copy, text="—", font=font(Fonts.SIZE_BASE), text_color=Colors.TEXT, anchor="w")
         self.lbl_foreground.pack(anchor="w", pady=(8, 0))
 
-        side = ctk.CTkFrame(self, fg_color="transparent")
+        side = Box(self, fg_color="transparent")
         side.grid(row=0, column=1, padx=(11, 0), sticky="nsew")
         side.grid_columnconfigure(0, weight=1)
 
-        heading = ctk.CTkFrame(side, fg_color="transparent")
+        heading = Box(side, fg_color="transparent")
         heading.grid(row=0, column=0, pady=(0, 12), sticky="ew")
-        ctk.CTkLabel(heading, text="Estado del sistema", font=font(Fonts.SIZE_MD, "bold"), text_color=Colors.TEXT, anchor="w").pack(anchor="w")
-        ctk.CTkLabel(heading, text="Datos del dispositivo seleccionado.", font=font(Fonts.SIZE_XS), text_color="#8191a5", anchor="w").pack(anchor="w", pady=(4, 0))
+        Label(heading, text="Estado del sistema", font=font(Fonts.SIZE_MD, "bold"), text_color=Colors.TEXT, anchor="w").pack(anchor="w")
+        Label(heading, text="Datos del dispositivo seleccionado.", font=font(Fonts.SIZE_XS), text_color="#8191a5", anchor="w").pack(anchor="w", pady=(4, 0))
 
-        self.stat_battery = self._stat_card(side, 1, "BATERÍA", "◫", Colors.ICON_GREEN)
-        self.stat_temp = self._stat_card(side, 2, "TEMPERATURA", "◐", Colors.ICON_AMBER)
+        self.stat_battery = self._stat_card(side, 1, "BATERÍA", "battery", Colors.ICON_GREEN)
+        self.stat_temp = self._stat_card(side, 2, "TEMPERATURA", "gauge", Colors.ICON_AMBER)
 
         network = make_panel(side)
         network.grid(row=3, column=0, pady=(20, 0), sticky="ew")
-        top = ctk.CTkFrame(network, fg_color="transparent")
+        top = Box(network, fg_color="transparent")
         top.pack(fill="x", padx=14, pady=(14, 0))
         make_eyebrow(top, "Conexión activa").pack(side="left")
-        self.lbl_net_title = ctk.CTkLabel(network, text="—", font=font(Fonts.SIZE_BASE, "bold"), text_color=Colors.TEXT, anchor="w")
+        self.lbl_net_title = Label(network, text="—", font=font(Fonts.SIZE_BASE, "bold"), text_color=Colors.TEXT, anchor="w")
         self.lbl_net_title.pack(anchor="w", padx=14, pady=(11, 0))
-        self.lbl_net_addr = ctk.CTkLabel(network, text="", font=font(Fonts.SIZE_XS), text_color="#718499", anchor="w")
+        self.lbl_net_addr = Label(network, text="", font=font(Fonts.SIZE_XS), text_color="#718499", anchor="w")
         self.lbl_net_addr.pack(anchor="w", padx=14, pady=(8, 14))
 
-    def _stat_card(self, parent, row: int, label: str, glyph: str, colors: tuple) -> dict:
+    def _stat_card(self, parent, row: int, label: str, icon_name: str, colors: tuple) -> dict:
         card = ctk.CTkFrame(parent, fg_color="#132235", border_width=1, border_color="#24384e", corner_radius=8)
         card.grid(row=row, column=0, pady=(0, 9), sticky="ew")
-        make_icon_tile(card, glyph, colors, size=34).grid(row=0, column=0, rowspan=3, padx=14, pady=14)
+        make_icon_tile(card, icon_name, colors, size=34).grid(row=0, column=0, rowspan=3, padx=14, pady=14)
         make_eyebrow(card, label).grid(row=0, column=1, sticky="sw", pady=(12, 0))
-        value = ctk.CTkLabel(card, text="—", font=font(Fonts.SIZE_XL, "bold"), text_color=Colors.TEXT, anchor="w")
+        value = Label(card, text="—", font=font(Fonts.SIZE_XL, "bold"), text_color=Colors.TEXT, anchor="w")
         value.grid(row=1, column=1, sticky="w")
-        detail = ctk.CTkLabel(card, text="", font=font(Fonts.SIZE_XS), text_color="#7890a5", anchor="w")
+        detail = Label(card, text="", font=font(Fonts.SIZE_XS), text_color="#7890a5", anchor="w")
         detail.grid(row=2, column=1, sticky="nw", pady=(0, 12))
         return {"value": value, "detail": detail}
 

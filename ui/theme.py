@@ -77,7 +77,7 @@ class Fonts:
 class Dims:
     SIDEBAR_W      = 240
     TOPBAR_H       = 54
-    CONSOLE_H      = 230
+    CONSOLE_H      = 200
     CONSOLE_H_BAR  = 43
     PANEL_RADIUS   = 10
     CTRL_RADIUS    = 6

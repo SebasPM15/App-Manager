@@ -11,14 +11,16 @@ from tkinter import filedialog, messagebox
 from core.adb_manager import ADBManager
 
 from ui.theme import Colors, Fonts, Dims
-from ui.widgets import font, make_button, make_eyebrow, make_status_dot
+from ui.widgets import Label, Box, font, make_button, make_eyebrow, make_status_dot
 from ui.sidebar import Sidebar
+from ui.scroll_area import ScrollArea
 from ui.console_panel import ConsolePanel
 from ui.tabs.dashboard import DashboardTab
 from ui.tabs.apps_tab import AppsTab
 from ui.tabs.remote_tab import RemoteTab
 
 POLL_INTERVAL = 2.0
+RESIZE_SETTLE_MS = 140
 DEFAULT_PORT = "5555"
 IP_PATTERN = re.compile(r"^\d{1,3}(\.\d{1,3}){3}(:\d{1,5})?$")
 LAUNCHER_CATEGORY = "android.intent.category.LAUNCHER"
@@ -29,8 +31,8 @@ class App(ctk.CTk):
     def __init__(self):
         super().__init__()
         self.title("ADB Control · Device Manager")
-        self.geometry("1280x820")
-        self.minsize(1040, 700)
+        self.geometry("1280x900")
+        self.minsize(900, 560)
         self.configure(fg_color=Colors.BG)
 
         self._log_queue = Queue()
@@ -41,6 +43,9 @@ class App(ctk.CTk):
         self._last_scan_at = time.time()
         self._active_device: str | None = None
         self._current_view = "dashboard"
+        self._last_size = None
+        self._frozen = False
+        self._thaw_job = None
 
         self._logcat_proc     = None
         self._logcat_running  = False
@@ -66,7 +71,7 @@ class App(ctk.CTk):
         )
         self.sidebar.grid(row=0, column=0, rowspan=2, sticky="nsew")
 
-        workspace = ctk.CTkFrame(self, fg_color="transparent", corner_radius=0)
+        workspace = Box(self, fg_color="transparent", corner_radius=0)
         workspace.grid(row=0, column=1, sticky="nsew")
         workspace.grid_columnconfigure(0, weight=1)
         workspace.grid_rowconfigure(2, weight=1)
@@ -75,28 +80,28 @@ class App(ctk.CTk):
         topbar.grid(row=0, column=0, sticky="ew", padx=Dims.PAD_LG)
         topbar.grid_propagate(False)
         topbar.grid_columnconfigure(0, weight=1)
-        self.lbl_breadcrumb = ctk.CTkLabel(topbar, text="", font=font(Fonts.SIZE_SM), text_color="#bac7d6", anchor="w")
+        self.lbl_breadcrumb = Label(topbar, text="", font=font(Fonts.SIZE_SM), text_color="#bac7d6", anchor="w")
         self.lbl_breadcrumb.grid(row=0, column=0, sticky="w", pady=16)
-        sync = ctk.CTkFrame(topbar, fg_color="transparent")
+        sync = Box(topbar, fg_color="transparent")
         sync.grid(row=0, column=1, sticky="e")
         make_status_dot(sync, online=True).pack(side="left")
-        self.lbl_sync = ctk.CTkLabel(sync, text="Sincronizado", font=font(Fonts.SIZE_XS), text_color="#708398")
+        self.lbl_sync = Label(sync, text="Sincronizado", font=font(Fonts.SIZE_XS), text_color="#708398")
         self.lbl_sync.pack(side="left", padx=(6, 0))
-        ctk.CTkFrame(workspace, height=1, fg_color=Colors.LINE_SOFT, corner_radius=0).grid(row=0, column=0, sticky="sew")
+        Box(workspace, height=1, fg_color=Colors.LINE_SOFT, corner_radius=0).grid(row=0, column=0, sticky="sew")
 
-        heading = ctk.CTkFrame(workspace, fg_color="transparent")
-        heading.grid(row=1, column=0, sticky="ew", padx=Dims.PAD_LG, pady=(26, 22))
+        heading = Box(workspace, fg_color="transparent")
+        heading.grid(row=1, column=0, sticky="ew", padx=Dims.PAD_LG, pady=(18, 16))
         heading.grid_columnconfigure(0, weight=1)
-        copy = ctk.CTkFrame(heading, fg_color="transparent")
+        copy = Box(heading, fg_color="transparent")
         copy.grid(row=0, column=0, sticky="w")
         make_eyebrow(copy, "Dispositivo activo").pack(anchor="w")
-        self.lbl_title = ctk.CTkLabel(copy, text="", font=font(Fonts.SIZE_XL, "bold"), text_color=Colors.TEXT, anchor="w")
+        self.lbl_title = Label(copy, text="", font=font(Fonts.SIZE_XL, "bold"), text_color=Colors.TEXT, anchor="w")
         self.lbl_title.pack(anchor="w", pady=(6, 4))
-        self.lbl_subtitle = ctk.CTkLabel(copy, text="", font=font(Fonts.SIZE_XS), text_color="#8191a5", anchor="w")
+        self.lbl_subtitle = Label(copy, text="", font=font(Fonts.SIZE_XS), text_color="#8191a5", anchor="w")
         self.lbl_subtitle.pack(anchor="w")
-        make_button(heading, "↻  Actualizar", self._refresh_all).grid(row=0, column=1, sticky="ne")
+        make_button(heading, " Actualizar", self._refresh_all, icon_name="refresh").grid(row=0, column=1, sticky="ne")
 
-        self.content = ctk.CTkFrame(workspace, fg_color="transparent")
+        self.content = Box(workspace, fg_color="transparent")
         self.content.grid(row=2, column=0, sticky="nsew", padx=Dims.PAD_LG, pady=(0, 16))
         self.content.grid_columnconfigure(0, weight=1)
         self.content.grid_rowconfigure(0, weight=1)
@@ -129,16 +134,26 @@ class App(ctk.CTk):
             "set_data":          self._set_data,
         }
 
-        self.tab_dashboard = DashboardTab(self.content, dash_cb)
-        self.tab_apps = AppsTab(self.content, apps_cb)
-        self.tab_remote = RemoteTab(self.content, remote_cb)
-        self._views = {
-            "dashboard": self.tab_dashboard,
-            "apps":      self.tab_apps,
-            "remote":    self.tab_remote,
+        self._views = {}
+        factories = {
+            "dashboard": (DashboardTab, dash_cb),
+            "apps":      (AppsTab, apps_cb),
+            "remote":    (RemoteTab, remote_cb),
         }
+        tabs = {}
+        for key, (factory, callbacks) in factories.items():
+            area = ScrollArea(self.content, background=Colors.BG)
+            tab = factory(area.body, callbacks)
+            tab.pack(fill="both", expand=True)
+            self._views[key] = area
+            tabs[key] = tab
+        self.tab_dashboard = tabs["dashboard"]
+        self.tab_apps = tabs["apps"]
+        self.tab_remote = tabs["remote"]
         self._show_view("dashboard")
         self.after(1000, self._tick_sync)
+        self.bind("<Configure>", self._on_window_configure)
+        self.bind_all("<MouseWheel>", self._on_mouse_wheel)
         console_cb = {
             "toggle_logcat":        self._toggle_logcat,
             "clear_logs":           self._clear_logs,
@@ -175,6 +190,36 @@ class App(ctk.CTk):
         self.lbl_title.configure(text=title)
         self.lbl_subtitle.configure(text=subtitle)
 
+    def _on_mouse_wheel(self, event):
+        widget = self.winfo_containing(event.x_root, event.y_root)
+        while widget is not None:
+            handler = getattr(widget, "handle_wheel", None)
+            if handler is not None and handler(event.delta):
+                return
+            widget = widget.master
+
+    def _on_window_configure(self, event):
+        if event.widget is not self:
+            return
+        size = (event.width, event.height)
+        if size == self._last_size:
+            return
+        self._last_size = size
+        if not self._frozen:
+            self._frozen = True
+            self.content.grid_remove()
+            self.console.body.grid_remove()
+        if self._thaw_job is not None:
+            self.after_cancel(self._thaw_job)
+        self._thaw_job = self.after(RESIZE_SETTLE_MS, self._thaw)
+
+    def _thaw(self):
+        self._thaw_job = None
+        self._frozen = False
+        self.content.grid()
+        if self.console.is_expanded():
+            self.console.body.grid()
+
     def _tick_sync(self):
         elapsed = int(time.time() - self._last_scan_at)
         self.lbl_sync.configure(text=f"Sincronizado hace {elapsed} s")
@@ -186,12 +231,11 @@ class App(ctk.CTk):
             self._on_device_change()
 
     def _process_queues(self):
-        try:
-            while True:
-                msg, raw = self._log_queue.get_nowait()
-                self.console.log(msg, raw=raw)
-        except Exception:
-            pass
+        batch = []
+        while len(batch) < 300 and not self._log_queue.empty():
+            batch.append(self._log_queue.get_nowait())
+        if batch:
+            self.console.log_batch(batch)
         result, self._scan_result = self._scan_result, None
         if result is not None:
             self._apply_scan(*result)

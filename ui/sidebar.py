@@ -1,11 +1,12 @@
 import customtkinter as ctk
 from ui.theme import Colors, Fonts, Dims
-from ui.widgets import font, make_eyebrow, make_status_dot, make_icon_tile
+from ui.widgets import Label, Box, font, make_eyebrow, make_status_dot, make_icon_tile
+from ui.icons import icon
 
 NAV_ITEMS = [
-    ("dashboard", "Dashboard", "▦"),
-    ("apps",      "Aplicaciones", "▤"),
-    ("remote",    "Control remoto", "◈"),
+    ("dashboard", "Dashboard", "dashboard"),
+    ("apps",      "Aplicaciones", "apps"),
+    ("remote",    "Control remoto", "remote"),
 ]
 
 
@@ -33,11 +34,11 @@ class Sidebar(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(3, weight=1)
 
-        brand = ctk.CTkFrame(self, fg_color="transparent")
+        brand = Box(self, fg_color="transparent")
         brand.grid(row=0, column=0, padx=21, pady=(22, 22), sticky="ew")
-        make_icon_tile(brand, "▮", ("#31537f", "#dceafe"), size=30).grid(row=0, column=0, rowspan=2, padx=(0, 10))
-        ctk.CTkLabel(brand, text="ADB Control", font=font(Fonts.SIZE_MD, "bold"), text_color=Colors.TEXT, anchor="w").grid(row=0, column=1, sticky="w")
-        ctk.CTkLabel(brand, text="DEVICE MANAGER", font=font(7), text_color=Colors.TEXT_DIM, anchor="w").grid(row=1, column=1, sticky="w")
+        make_icon_tile(brand, "smartphone", ("#31537f", "#dceafe"), size=30).grid(row=0, column=0, rowspan=2, padx=(0, 10))
+        Label(brand, text="ADB Control", font=font(Fonts.SIZE_MD, "bold"), text_color=Colors.TEXT, anchor="w").grid(row=0, column=1, sticky="w")
+        Label(brand, text="DEVICE MANAGER", font=font(7), text_color=Colors.TEXT_DIM, anchor="w").grid(row=1, column=1, sticky="w")
 
         card = ctk.CTkFrame(
             self,
@@ -49,25 +50,25 @@ class Sidebar(ctk.CTkFrame):
         card.grid(row=1, column=0, padx=14, sticky="ew")
         card.grid_columnconfigure(0, weight=1)
 
-        heading = ctk.CTkFrame(card, fg_color="transparent")
+        heading = Box(card, fg_color="transparent")
         heading.grid(row=0, column=0, padx=11, pady=(13, 0), sticky="ew")
         heading.grid_columnconfigure(1, weight=1)
         self.status_dot = make_status_dot(heading)
         self.status_dot.grid(row=0, column=0)
-        self.status_label = ctk.CTkLabel(heading, text="Sin conexión", font=font(Fonts.SIZE_SM), text_color="#b9c9dc", anchor="w")
+        self.status_label = Label(heading, text="Sin conexión", font=font(Fonts.SIZE_SM), text_color="#b9c9dc", anchor="w")
         self.status_label.grid(row=0, column=1, padx=(6, 0), sticky="w")
-        ctk.CTkLabel(
+        Label(
             heading, text="ADB", font=font(Fonts.SIZE_XS, "bold"), text_color=Colors.BLUE_BRIGHT,
             fg_color="#213b5d", corner_radius=4, width=30, height=18,
         ).grid(row=0, column=2)
 
-        mini = ctk.CTkFrame(card, fg_color="transparent")
+        mini = Box(card, fg_color="transparent")
         mini.grid(row=1, column=0, padx=11, pady=(14, 8), sticky="ew")
         mini.grid_columnconfigure(1, weight=1)
-        make_icon_tile(mini, "▯", ("#253e60", "#7fb0ee"), size=34).grid(row=0, column=0, rowspan=2, padx=(0, 9))
-        self.device_name = ctk.CTkLabel(mini, text="Sin dispositivo", font=font(Fonts.SIZE_BASE, "bold"), text_color=Colors.TEXT, anchor="w")
+        make_icon_tile(mini, "smartphone", ("#253e60", "#7fb0ee"), size=34).grid(row=0, column=0, rowspan=2, padx=(0, 9))
+        self.device_name = Label(mini, text="Sin dispositivo", font=font(Fonts.SIZE_BASE, "bold"), text_color=Colors.TEXT, anchor="w")
         self.device_name.grid(row=0, column=1, sticky="w")
-        self.device_addr = ctk.CTkLabel(mini, text="—", font=font(Fonts.SIZE_XS), text_color="#718398", anchor="w")
+        self.device_addr = Label(mini, text="—", font=font(Fonts.SIZE_XS), text_color="#718398", anchor="w")
         self.device_addr.grid(row=1, column=1, sticky="w")
 
         self.combo_dev = ctk.CTkComboBox(
@@ -102,14 +103,18 @@ class Sidebar(ctk.CTkFrame):
         self.entry_connect.grid(row=3, column=0, padx=11, pady=(0, 11), sticky="ew")
         self.entry_connect.bind("<Return>", self._submit)
 
-        nav = ctk.CTkFrame(self, fg_color="transparent")
+        nav = Box(self, fg_color="transparent")
         nav.grid(row=2, column=0, padx=14, pady=(28, 0), sticky="ew")
         nav.grid_columnconfigure(0, weight=1)
         make_eyebrow(nav, "Gestión").grid(row=0, column=0, padx=11, pady=(0, 9), sticky="w")
-        for idx, (view_id, label, glyph) in enumerate(NAV_ITEMS, start=1):
+        self._nav_icons: dict[str, str] = {}
+        for idx, (view_id, label, icon_name) in enumerate(NAV_ITEMS, start=1):
+            self._nav_icons[view_id] = icon_name
             btn = ctk.CTkButton(
                 nav,
-                text=f"{glyph}   {label}",
+                text=f"  {label}",
+                image=icon(icon_name, 17, Colors.TEXT_MUTED),
+                compound="left",
                 anchor="w",
                 height=38,
                 corner_radius=Dims.CTRL_RADIUS,
@@ -122,7 +127,7 @@ class Sidebar(ctk.CTkFrame):
             btn.grid(row=idx, column=0, pady=2, sticky="ew")
             self._nav_buttons[view_id] = btn
 
-        self.apps_count = ctk.CTkLabel(
+        self.apps_count = Label(
             self._nav_buttons["apps"],
             text="",
             font=font(Fonts.SIZE_XS, "bold"),
@@ -132,13 +137,15 @@ class Sidebar(ctk.CTkFrame):
             height=18,
         )
 
-        bottom = ctk.CTkFrame(self, fg_color="transparent")
+        bottom = Box(self, fg_color="transparent")
         bottom.grid(row=4, column=0, padx=14, pady=(0, 16), sticky="sew")
         bottom.grid_columnconfigure(0, weight=1)
-        ctk.CTkFrame(bottom, height=1, fg_color="#1a2a3b").grid(row=0, column=0, sticky="ew", pady=(0, 12))
+        Box(bottom, height=1, fg_color="#1a2a3b").grid(row=0, column=0, sticky="ew", pady=(0, 12))
         ctk.CTkButton(
             bottom,
-            text="▣   Terminal ADB",
+            text="  Terminal ADB",
+            image=icon("terminal", 17, Colors.TEXT_MUTED),
+            compound="left",
             anchor="w",
             height=38,
             corner_radius=Dims.CTRL_RADIUS,
@@ -149,10 +156,10 @@ class Sidebar(ctk.CTkFrame):
             command=self._on_open_shell,
         ).grid(row=1, column=0, sticky="ew")
 
-        footer = ctk.CTkFrame(bottom, fg_color="transparent")
+        footer = Box(bottom, fg_color="transparent")
         footer.grid(row=2, column=0, padx=8, pady=(12, 0), sticky="ew")
         make_status_dot(footer, online=True).pack(side="left")
-        ctk.CTkLabel(footer, text="ADB daemon activo", font=font(Fonts.SIZE_XS), text_color="#6d8094").pack(side="left", padx=(6, 0))
+        Label(footer, text="ADB daemon activo", font=font(Fonts.SIZE_XS), text_color="#6d8094").pack(side="left", padx=(6, 0))
 
         self.set_active_view("dashboard")
 
@@ -168,6 +175,7 @@ class Sidebar(ctk.CTkFrame):
             btn.configure(
                 fg_color=Colors.NAV_ACTIVE if active else "transparent",
                 text_color=Colors.NAV_ACTIVE_TX if active else Colors.TEXT_MUTED,
+                image=icon(self._nav_icons[key], 17, Colors.NAV_ACTIVE_TX if active else Colors.TEXT_MUTED),
             )
 
     def set_apps_count(self, count: int):

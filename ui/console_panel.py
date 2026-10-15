@@ -1,7 +1,9 @@
+import tkinter as tk
 import customtkinter as ctk
 from datetime import datetime
 from ui.theme import Colors, Fonts, Dims
-from ui.widgets import font
+from ui.icons import icon
+from ui.widgets import Label, Box, font, _scale, _tk_font
 
 LEVEL_COLORS = {
     "INFO": Colors.BLUE,
@@ -9,6 +11,8 @@ LEVEL_COLORS = {
     "ERR":  Colors.RED,
 }
 ERROR_MARKERS = ("error", "fallo", "no encontrado", "no válida", "failed", "unable")
+MAX_LINES = 2000
+TRIM_LINES = 500
 
 
 class ConsolePanel(ctk.CTkFrame):
@@ -20,11 +24,13 @@ class ConsolePanel(ctk.CTkFrame):
         self._expanded = True
         self._build()
 
-    def _link(self, parent, text: str, command, color: str = Colors.TEXT_MUTED, hover: str = "#c6d4e2") -> ctk.CTkButton:
+    def _link(self, parent, text: str, command, color: str = Colors.TEXT_MUTED, icon_name: str | None = None) -> ctk.CTkButton:
         return ctk.CTkButton(
             parent,
             text=text,
             command=command,
+            image=icon(icon_name, 13, color) if icon_name else None,
+            compound="left",
             width=0,
             height=26,
             fg_color="transparent",
@@ -38,28 +44,29 @@ class ConsolePanel(ctk.CTkFrame):
         self.grid_columnconfigure(0, weight=1)
         self.grid_rowconfigure(2, weight=1)
 
-        ctk.CTkFrame(self, height=1, fg_color="#263a50", corner_radius=0).grid(row=0, column=0, sticky="ew")
+        Box(self, height=1, fg_color="#263a50").grid(row=0, column=0, sticky="ew")
 
-        header = ctk.CTkFrame(self, fg_color="transparent", height=Dims.CONSOLE_H_BAR - 1)
+        header = ctk.CTkFrame(self, fg_color="transparent", height=Dims.CONSOLE_H_BAR - 1, corner_radius=0)
         header.grid(row=1, column=0, sticky="ew", padx=(Dims.PAD_LG, 20))
         header.grid_propagate(False)
         header.grid_columnconfigure(1, weight=1)
 
-        title = ctk.CTkFrame(header, fg_color="transparent")
+        title = Box(header)
         title.grid(row=0, column=0, sticky="w", pady=7)
         self.btn_expand = ctk.CTkButton(
-            title, text="▾  Consola ADB", command=self._toggle_expand,
+            title, text=" Consola ADB", command=self._toggle_expand,
+            image=icon("chevron-down", 14, "#c2cfdd"), compound="left",
             width=0, height=26, fg_color="transparent", hover_color=Colors.CONSOLE,
             text_color="#c2cfdd", font=font(Fonts.SIZE_SM, "bold"),
         )
         self.btn_expand.pack(side="left")
-        self.status_chip = ctk.CTkLabel(
+        self.status_chip = Label(
             title, text="Lista", font=font(Fonts.SIZE_XS),
             text_color="#69c398", fg_color=Colors.GREEN_DIM, corner_radius=5, height=20, width=88,
         )
         self.status_chip.pack(side="left", padx=(4, 0))
 
-        controls = ctk.CTkFrame(header, fg_color="transparent")
+        controls = Box(header)
         controls.grid(row=0, column=1, sticky="e")
 
         self.combo_level = ctk.CTkComboBox(
@@ -92,50 +99,53 @@ class ConsolePanel(ctk.CTkFrame):
         )
         self.check_filter.pack(side="left", padx=8)
 
-        self.btn_logcat = self._link(controls, "Iniciar logcat", self._cb.get("toggle_logcat", lambda: None))
+        self.btn_logcat = self._link(controls, "Iniciar logcat", self._cb.get("toggle_logcat", lambda: None), icon_name="play")
         self.btn_logcat.pack(side="left", padx=4)
-        self._link(controls, "Limpiar", self._cb.get("clear_logs", lambda: None)).pack(side="left", padx=4)
-        self._link(controls, "Guardar", self._cb.get("save_logs", lambda: None)).pack(side="left", padx=4)
+        self._link(controls, "Limpiar", self._cb.get("clear_logs", lambda: None), icon_name="trash").pack(side="left", padx=4)
+        self._link(controls, "Guardar", self._cb.get("save_logs", lambda: None), icon_name="download").pack(side="left", padx=4)
 
-        self.body = ctk.CTkFrame(self, fg_color="transparent")
+        self.body = Box(self)
         self.body.grid(row=2, column=0, sticky="nsew", padx=(Dims.PAD_LG, 20), pady=(0, 10))
         self.body.grid_columnconfigure(0, weight=1)
         self.body.grid_rowconfigure(0, weight=1)
 
-        self.text_logs = ctk.CTkTextbox(
+        scale = _scale(self)
+        self.text_logs = tk.Text(
             self.body,
             state="disabled",
-            fg_color="transparent",
-            text_color="#8da1b3",
-            font=font(Fonts.SIZE_XS, mono=True),
-            corner_radius=0,
-            border_width=0,
+            bg=Colors.CONSOLE,
+            fg="#8da1b3",
+            font=_tk_font(font(Fonts.SIZE_XS, mono=True), scale),
+            borderwidth=0,
+            highlightthickness=0,
             wrap="none",
-            activate_scrollbars=True,
-            scrollbar_button_color=Colors.LINE,
-            scrollbar_button_hover_color=Colors.TEXT_DIM,
+            padx=0,
+            pady=0,
+            cursor="arrow",
+            insertwidth=0,
+            selectbackground=Colors.BLUE_DIM,
+            height=1,
         )
         self.text_logs.grid(row=0, column=0, sticky="nsew")
-        inner = self.text_logs._textbox
-        inner.tag_config("time", foreground="#536b80")
+        self.text_logs.tag_config("time", foreground="#536b80")
         for level, color in LEVEL_COLORS.items():
-            inner.tag_config(level, foreground=color)
+            self.text_logs.tag_config(level, foreground=color)
 
-        command_line = ctk.CTkFrame(self.body, fg_color="transparent")
+        command_line = Box(self.body)
         command_line.grid(row=1, column=0, sticky="ew", pady=(6, 0))
         command_line.grid_columnconfigure(1, weight=1)
-        ctk.CTkFrame(command_line, height=1, fg_color="#1c2b3c").grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 6))
-        ctk.CTkLabel(command_line, text="$", font=font(Fonts.SIZE_SM, mono=True), text_color="#6fc59b", width=14).grid(row=1, column=0)
+        Box(command_line, height=1, fg_color="#1c2b3c").grid(row=0, column=0, columnspan=3, sticky="ew", pady=(0, 6))
+        Label(command_line, text="$", font=font(Fonts.SIZE_SM, mono=True), text_color="#6fc59b").grid(row=1, column=0)
         self.entry_cmd = ctk.CTkEntry(
             command_line,
             placeholder_text="Escribe un comando ADB...",
-            height=24, border_width=0, fg_color="transparent",
+            height=24, border_width=0, fg_color=Colors.CONSOLE,
             text_color="#bfcee0", placeholder_text_color=Colors.TEXT_DIM,
             font=font(Fonts.SIZE_XS, mono=True),
         )
         self.entry_cmd.grid(row=1, column=1, sticky="ew", padx=6)
         self.entry_cmd.bind("<Return>", lambda e: self._execute_cmd())
-        self._link(command_line, "⏎  Ejecutar", self._execute_cmd, color="#79a8df").grid(row=1, column=2)
+        self._link(command_line, "Ejecutar", self._execute_cmd, color="#79a8df", icon_name="command").grid(row=1, column=2)
 
     def _execute_cmd(self):
         cmd = self.entry_cmd.get().strip()
@@ -151,11 +161,11 @@ class ConsolePanel(ctk.CTkFrame):
         if expanded:
             self.configure(height=Dims.CONSOLE_H)
             self.body.grid()
-            self.btn_expand.configure(text="▾  Consola ADB")
+            self.btn_expand.configure(image=icon("chevron-down", 14, "#c2cfdd"))
         else:
             self.body.grid_remove()
             self.configure(height=Dims.CONSOLE_H_BAR)
-            self.btn_expand.configure(text="▸  Consola ADB")
+            self.btn_expand.configure(image=icon("chevron-right", 14, "#c2cfdd"))
         cb = self._cb.get("on_expand_change")
         if cb:
             cb(expanded)
@@ -173,11 +183,15 @@ class ConsolePanel(ctk.CTkFrame):
         return self.check_filter.get() == 1
 
     def log(self, msg: str, raw: bool = False):
-        inner = self.text_logs._textbox
-        self.text_logs.configure(state="normal")
-        if raw:
-            inner.insert("end", msg + "\n")
-        else:
+        self.log_batch([(msg, raw)])
+
+    def log_batch(self, entries: list):
+        text = self.text_logs
+        text.configure(state="normal")
+        for msg, raw in entries:
+            if raw:
+                text.insert("end", msg + "\n")
+                continue
             lowered = msg.lower()
             if msg.startswith("$ "):
                 level = "INFO"
@@ -185,11 +199,13 @@ class ConsolePanel(ctk.CTkFrame):
                 level = "ERR"
             else:
                 level = "OK"
-            inner.insert("end", datetime.now().strftime("%H:%M:%S") + "  ", "time")
-            inner.insert("end", f"{level:<5}", level)
-            inner.insert("end", f"  {msg}\n")
-        self.text_logs.see("end")
-        self.text_logs.configure(state="disabled")
+            text.insert("end", datetime.now().strftime("%H:%M:%S") + "  ", "time")
+            text.insert("end", f"{level:<5}", level)
+            text.insert("end", f"  {msg}\n")
+        if int(text.index("end-1c").split(".")[0]) > MAX_LINES:
+            text.delete("1.0", f"{TRIM_LINES}.0")
+        text.see("end")
+        text.configure(state="disabled")
 
     def clear(self):
         self.text_logs.configure(state="normal")
@@ -201,8 +217,8 @@ class ConsolePanel(ctk.CTkFrame):
 
     def set_logcat_running(self, running: bool):
         if running:
-            self.btn_logcat.configure(text="Detener logcat", text_color=Colors.RED)
+            self.btn_logcat.configure(text="Detener logcat", text_color=Colors.RED, image=icon("stop", 13, Colors.RED))
             self.status_chip.configure(text="Logcat activo", text_color=Colors.BLUE_BRIGHT, fg_color="#213b5d")
         else:
-            self.btn_logcat.configure(text="Iniciar logcat", text_color=Colors.TEXT_MUTED)
+            self.btn_logcat.configure(text="Iniciar logcat", text_color=Colors.TEXT_MUTED, image=icon("play", 13, Colors.TEXT_MUTED))
             self.status_chip.configure(text="Lista", text_color="#69c398", fg_color=Colors.GREEN_DIM)
