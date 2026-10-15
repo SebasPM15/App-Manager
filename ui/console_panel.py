@@ -3,7 +3,7 @@ import customtkinter as ctk
 from datetime import datetime
 from ui.theme import Colors, Fonts, Dims
 from ui.icons import icon
-from ui.widgets import Label, Box, font, _scale, _tk_font
+from ui.widgets import Label, Box, font, _scale, _tk_font, track_scaling
 
 LEVEL_COLORS = {
     "INFO": Colors.BLUE,
@@ -127,6 +127,7 @@ class ConsolePanel(ctk.CTkFrame):
             height=1,
         )
         self.text_logs.grid(row=0, column=0, sticky="nsew")
+        track_scaling(self.text_logs, lambda s: self.text_logs.configure(font=_tk_font(font(Fonts.SIZE_XS, mono=True), s)))
         self.text_logs.tag_config("time", foreground="#536b80")
         for level, color in LEVEL_COLORS.items():
             self.text_logs.tag_config(level, foreground=color)

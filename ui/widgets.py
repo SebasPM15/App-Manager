@@ -44,11 +44,39 @@ def _tk_font(spec, scale: float):
     return spec
 
 
+def track_scaling(widget, apply):
+    def callback(widget_scaling, window_scaling):
+        try:
+            apply(widget_scaling)
+        except tk.TclError:
+            pass
+
+    def release(event):
+        if event.widget is widget:
+            try:
+                ScalingTracker.remove_widget(callback, widget)
+            except Exception:
+                pass
+
+    ScalingTracker.add_widget(callback, widget)
+    widget.bind("<Destroy>", release, add="+")
+
+
+def place_scaled(widget, x: int, y: int):
+    def apply(scale):
+        widget.place(x=round(x * scale), y=round(y * scale))
+
+    apply(_scale(widget))
+    track_scaling(widget, apply)
+
+
 class _PlainLabel(tk.Label):
 
     def __init__(self, master, text: str = "", font=None, text_color=None, fg_color=None,
                  anchor: str = "center", justify: str = "left", wraplength: int = 0, **_ignored):
         self._scale_factor = _scale(master)
+        self._font_spec = font
+        self._wrap_spec = wraplength
         background = _resolve_bg(master) if fg_color in (None, "transparent") else fg_color
         super().__init__(
             master,
@@ -64,6 +92,14 @@ class _PlainLabel(tk.Label):
             borderwidth=0,
             highlightthickness=0,
         )
+        track_scaling(self, self._apply_scaling)
+
+    def _apply_scaling(self, scale: float):
+        self._scale_factor = scale
+        options = {"wraplength": round(self._wrap_spec * scale)}
+        if self._font_spec is not None:
+            options["font"] = _tk_font(self._font_spec, scale)
+        tk.Label.configure(self, **options)
 
     def configure(self, cnf=None, **kw):
         if "text_color" in kw:
@@ -72,8 +108,10 @@ class _PlainLabel(tk.Label):
             color = kw.pop("fg_color")
             kw["bg"] = _resolve_bg(self.master) if color == "transparent" else color
         if "font" in kw:
+            self._font_spec = kw["font"]
             kw["font"] = _tk_font(kw["font"], self._scale_factor)
         if "wraplength" in kw:
+            self._wrap_spec = kw["wraplength"]
             kw["wraplength"] = round(kw["wraplength"] * self._scale_factor)
         kw.pop("text_color_disabled", None)
         return super().configure(cnf, **kw)

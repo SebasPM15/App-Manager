@@ -8,5 +8,6 @@
         "KP Pack": "com.perfect.pack",
         "KP Prep TB": "com.perfect.kppreptb",
         "KP Queue": "com.perfect.kpqueue"
-    }
+    },
+    "ui_scale": 1.0
 }

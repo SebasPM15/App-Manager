@@ -1,7 +1,7 @@
 import customtkinter as ctk
 from ui.theme import Colors, Fonts, Dims
 from ui.icons import icon
-from ui.widgets import Label, Box, font, make_panel, make_eyebrow, make_status_dot, make_icon_tile, bind_click
+from ui.widgets import Label, Box, font, make_panel, make_eyebrow, make_status_dot, make_icon_tile, bind_click, place_scaled
 
 QUICK_ACTIONS = [
     ("scrcpy",     "Abrir Scrcpy",        "Iniciar espejo de pantalla", "play", Colors.ICON_VIOLET),
@@ -99,9 +99,9 @@ class DashboardTab(ctk.CTkFrame):
             card = ctk.CTkFrame(quick, fg_color=Colors.CARD, border_width=1, border_color="#23384e", corner_radius=8, height=112)
             card.grid(row=0, column=col, padx=(0 if col == 0 else 4, 0 if col == 3 else 4), sticky="nsew")
             card.grid_propagate(False)
-            make_icon_tile(card, icon_name, colors, size=29).place(x=14, y=14)
-            Label(card, text=title_text, font=font(Fonts.SIZE_SM, "bold"), text_color=Colors.TEXT, anchor="w").place(x=14, y=56)
-            Label(card, text=subtitle, font=font(Fonts.SIZE_XS), text_color="#778ba1", anchor="w", wraplength=120, justify="left").place(x=14, y=76)
+            place_scaled(make_icon_tile(card, icon_name, colors, size=29), 14, 14)
+            place_scaled(Label(card, text=title_text, font=font(Fonts.SIZE_SM, "bold"), text_color=Colors.TEXT, anchor="w"), 14, 56)
+            place_scaled(Label(card, text=subtitle, font=font(Fonts.SIZE_XS), text_color="#778ba1", anchor="w", wraplength=120, justify="left"), 14, 80)
             bind_click(card, self._cb.get(key, lambda: None), hover_target=card, normal=Colors.CARD, hover=Colors.CARD_HOVER)
 
         foreground = make_panel(main)

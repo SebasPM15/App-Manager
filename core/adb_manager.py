@@ -60,6 +60,7 @@ class ADBManager:
             result = subprocess.run(
                 resolved,
                 capture_output=True,
+                stdin=subprocess.DEVNULL,
                 text=True,
                 timeout=timeout,
                 creationflags=subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0,
@@ -82,6 +83,7 @@ class ADBManager:
             resolved[0] = SCRCPY_PATH
         return subprocess.Popen(
             resolved,
+            stdin=subprocess.DEVNULL,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
             text=True,

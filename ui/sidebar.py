@@ -38,7 +38,7 @@ class Sidebar(ctk.CTkFrame):
         brand.grid(row=0, column=0, padx=21, pady=(22, 22), sticky="ew")
         make_icon_tile(brand, "smartphone", ("#31537f", "#dceafe"), size=30).grid(row=0, column=0, rowspan=2, padx=(0, 10))
         Label(brand, text="ADB Control", font=font(Fonts.SIZE_MD, "bold"), text_color=Colors.TEXT, anchor="w").grid(row=0, column=1, sticky="w")
-        Label(brand, text="DEVICE MANAGER", font=font(7), text_color=Colors.TEXT_DIM, anchor="w").grid(row=1, column=1, sticky="w")
+        Label(brand, text="DEVICE MANAGER", font=font(Fonts.SIZE_XS - 1), text_color=Colors.TEXT_DIM, anchor="w").grid(row=1, column=1, sticky="w")
 
         card = ctk.CTkFrame(
             self,

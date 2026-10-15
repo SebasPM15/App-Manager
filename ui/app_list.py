@@ -2,9 +2,9 @@ import tkinter as tk
 import tkinter.font as tkfont
 
 from ui.theme import Colors, Fonts
-from ui.widgets import _scale
+from ui.widgets import _scale, track_scaling
 
-ROW_HEIGHT = 52
+ROW_HEIGHT = 58
 SYMBOL_COLORS = ["#f8b84e", "#6b86a8", "#e55b61", "#63a3e2", "#4ac48a", "#548ddd", "#a28ee8", "#d07fb0"]
 
 
@@ -19,10 +19,11 @@ class AppList(tk.Canvas):
         self._offset = 0
         self._scale = _scale(master)
         self._row_h = round(ROW_HEIGHT * self._scale)
-        self._font_name = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_SM * 1.25 * self._scale), weight="bold")
-        self._font_pkg = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_XS * 1.25 * self._scale))
-        self._font_badge = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_XS * 1.25 * self._scale))
-        self._font_letter = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_BASE * 1.25 * self._scale), weight="bold")
+        self._font_name = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_SM * self._scale), weight="bold")
+        self._font_pkg = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_XS * self._scale))
+        self._font_badge = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_XS * self._scale))
+        self._font_letter = tkfont.Font(family=Fonts.FAMILY_PRIMARY, size=-round(Fonts.SIZE_BASE * self._scale), weight="bold")
+        track_scaling(self, self._apply_scaling)
         self._drag_from: int | None = None
 
         self.bind("<Configure>", lambda e: self._redraw())
@@ -107,6 +108,15 @@ class AppList(tk.Canvas):
         ]
         return self.create_polygon(points, smooth=True, **kw)
 
+    def _apply_scaling(self, scale: float):
+        self._scale = scale
+        self._row_h = round(ROW_HEIGHT * scale)
+        self._font_name.configure(size=-round(Fonts.SIZE_SM * scale))
+        self._font_pkg.configure(size=-round(Fonts.SIZE_XS * scale))
+        self._font_badge.configure(size=-round(Fonts.SIZE_XS * scale))
+        self._font_letter.configure(size=-round(Fonts.SIZE_BASE * scale))
+        self._redraw()
+
     def _redraw(self):
         self.delete("all")
         width, height = self.winfo_width(), self.winfo_height()
@@ -130,15 +140,15 @@ class AppList(tk.Canvas):
             self.create_text(sx + sym / 2, sy + sym / 2, text=name[:1].upper(), fill="#ffffff", font=self._font_letter)
 
             text_x = sx + sym + round(12 * s)
-            self.create_text(text_x, top + round(15 * s), text=name, anchor="nw", fill=Colors.TEXT, font=self._font_name)
-            self.create_text(text_x, top + round(32 * s), text=pkg, anchor="nw", fill="#6f8398", font=self._font_pkg)
+            self.create_text(text_x, top + round(14 * s), text=name, anchor="nw", fill=Colors.TEXT, font=self._font_name)
+            self.create_text(text_x, top + round(35 * s), text=pkg, anchor="nw", fill="#6f8398", font=self._font_pkg)
 
             is_system = kind == "Sistema"
             badge_w = self._font_badge.measure(kind) + round(14 * s)
             right = width - scrollbar_gutter - round(10 * s)
-            self._round_rect(right - badge_w, top + round(16 * s), right, top + round(36 * s), round(4 * s),
+            self._round_rect(right - badge_w, top + round(17 * s), right, top + round(41 * s), round(4 * s),
                              fill="#302a49" if is_system else "#1d354e", outline="")
-            self.create_text(right - badge_w / 2, top + round(26 * s), text=kind,
+            self.create_text(right - badge_w / 2, top + round(29 * s), text=kind,
                              fill="#b6a1df" if is_system else "#75b5de", font=self._font_badge)
 
         total = len(self._items) * self._row_h

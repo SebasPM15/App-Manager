@@ -1,7 +1,7 @@
 import tkinter as tk
 
 from ui.theme import Colors
-from ui.widgets import _scale
+from ui.widgets import _scale, track_scaling
 
 GUTTER = 12
 THUMB_MIN = 28
@@ -23,6 +23,12 @@ class ScrollArea(tk.Frame):
         self.body.bind("<Configure>", lambda e: self._layout())
         self._thumb.bind("<Button-1>", self._start_drag)
         self._thumb.bind("<B1-Motion>", self._drag)
+        track_scaling(self, self._apply_scaling)
+
+    def _apply_scaling(self, scale: float):
+        self._scale = scale
+        self._canvas.configure(yscrollincrement=round(24 * scale))
+        self._layout()
 
     def _overflow(self) -> int:
         return max(0, self.body.winfo_reqheight() - self._canvas.winfo_height())

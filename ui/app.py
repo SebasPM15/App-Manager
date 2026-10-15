@@ -4,11 +4,13 @@ import time
 import os
 import re
 import shlex
+import sys
 from datetime import datetime
 from queue import Queue
 from tkinter import filedialog, messagebox
 
 from core.adb_manager import ADBManager
+from core.ui_settings import load_ui_scale, save_ui_scale
 
 from ui.theme import Colors, Fonts, Dims
 from ui.widgets import Label, Box, font, make_button, make_eyebrow, make_status_dot
@@ -154,6 +156,10 @@ class App(ctk.CTk):
         self.after(1000, self._tick_sync)
         self.bind("<Configure>", self._on_window_configure)
         self.bind_all("<MouseWheel>", self._on_mouse_wheel)
+        mod = "Command" if sys.platform == "darwin" else "Control"
+        for key, step in (("plus", 0.1), ("equal", 0.1), ("minus", -0.1)):
+            self.bind_all(f"<{mod}-{key}>", lambda e, d=step: self._change_zoom(d))
+        self.bind_all(f"<{mod}-Key-0>", lambda e: self._change_zoom(None))
         console_cb = {
             "toggle_logcat":        self._toggle_logcat,
             "clear_logs":           self._clear_logs,
@@ -597,6 +603,15 @@ class App(ctk.CTk):
             self._stop_logcat()
         else:
             self._start_logcat()
+
+    def _change_zoom(self, delta):
+        current = load_ui_scale()
+        target = 1.0 if delta is None else current + delta
+        save_ui_scale(target)
+        applied = load_ui_scale()
+        if abs(applied - current) < 0.001:
+            return
+        ctk.set_widget_scaling(applied)
 
     def _start_logcat(self):
         dev = self._get_device()

@@ -65,22 +65,22 @@ class Fonts:
     FAMILY_PRIMARY = "Arial"
     FAMILY_MONO    = "Consolas" if IS_WINDOWS else ("Menlo" if IS_MACOS else "DejaVu Sans Mono")
 
-    SIZE_XS   = 9
-    SIZE_SM   = 10
-    SIZE_BASE = 11
-    SIZE_MD   = 12
-    SIZE_LG   = 14
-    SIZE_XL   = 18
-    SIZE_2XL  = 22
+    SIZE_XS   = 11
+    SIZE_SM   = 12
+    SIZE_BASE = 13
+    SIZE_MD   = 14
+    SIZE_LG   = 16
+    SIZE_XL   = 20
+    SIZE_2XL  = 24
 
 
 class Dims:
-    SIDEBAR_W      = 240
+    SIDEBAR_W      = 260
     TOPBAR_H       = 54
     CONSOLE_H      = 200
     CONSOLE_H_BAR  = 43
     PANEL_RADIUS   = 10
     CTRL_RADIUS    = 6
-    BTN_HEIGHT     = 33
+    BTN_HEIGHT     = 36
     PAD            = 14
     PAD_LG         = 28
