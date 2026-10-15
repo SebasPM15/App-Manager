@@ -6,39 +6,37 @@ Una potente y moderna interfaz gráfica escrita en Python para controlar, automa
 
 ## 🚀 Características Principales
 
-### 📊 1. Dashboard de Control (Pantalla de Inicio)
-* **Información Detallada del Hardware:** Modelo, versión de Android, SDK e IP local de red.
-* **Estado de Batería:** Porcentaje (barra gráfica dinámica de color), temperatura exacta y estado de carga.
-* **Control Remoto Visual (Espejo):** Abre de forma instantánea la pantalla del dispositivo físico con **Scrcpy** para interactuar directamente desde tu Mac usando mouse y teclado.
-* **Acciones Rápidas:** Capturas de pantalla, reinicios del dispositivo y sincronización de hora.
+### 📊 1. Dashboard
+* **Información del dispositivo:** modelo, versión de Android, SDK, tipo de conexión (USB/WiFi) e IP.
+* **Estado del sistema:** batería con color dinámico, temperatura, red y app en primer plano.
+* **Acciones rápidas:** abrir **Scrcpy** (espejo de pantalla), tomar captura, sincronizar hora y reiniciar el dispositivo.
 
-### 🔌 2. Conexión Inalámbrica Inteligente (WiFi Hub)
-* **Auto-Wireless:** Configura la tablet por WiFi de forma automática en un clic. Detecta la IP del dispositivo conectado por USB, abre el puerto de red `5555` y establece el enlace para que puedas desconectar el cable de inmediato.
-* **Conexión Manual:** Permite asociar o desconectar dispositivos por su IP y Puerto.
-* **ADB Pairing (Android 11+):** Soporte integrado para emparejar nuevos dispositivos utilizando códigos de vinculación de seguridad inalámbrica.
+### 🔌 2. Conexión de dispositivos (barra lateral)
+* **Selector de dispositivo** con estado de conexión y detección automática (sondeo periódico).
+* **Conexión por IP:** campo para conectar con `IP[:puerto]` (puerto por defecto `5555`), varios destinos a la vez, y desconexión con `disconnect`/`desconectar`.
+* **Shell ADB:** abre una terminal nativa con `adb shell` para el dispositivo seleccionado.
 
-### 📦 3. Gestión y Separación de Apps
-* **Aplicaciones Favoritas:** Sección rápida para las aplicaciones cargadas desde `config.json`.
-  * **Indicadores Visuales (🟢/🔴):** Muestra al vuelo si cada una de las apps favoritas está o no instalada en el dispositivo seleccionado.
-* **Buscador General:** Permite buscar y listar todos los paquetes instalados de terceros o del sistema.
-* **Agregar a Favoritas (`[⭐]`):** Añade cualquier paquete detectado en el dispositivo a tu listado de favoritos con un nombre personalizado en caliente.
-* **Operaciones de App:** Launch (🚀), Force Stop (🛑), Clear Data (🧹), Uninstall (🗑️) y Clean & Start (✨).
-* **Permisos Especiales:** Concede rápidamente accesos avanzados como Superposición de Pantalla (`Overlay`).
-* **Instalador de APKs:** Permite seleccionar cualquier APK local en tu Mac e instalarlo con barra de progreso interactiva.
+### 📦 3. Aplicaciones
+* **Listado de paquetes** con buscador y filtros **Todas / Terceros / Sistema**.
+* **Operaciones sobre la app seleccionada:** abrir, forzar detención, limpiar y abrir, borrar datos y desinstalar.
+* **Permiso de superposición** (`SYSTEM_ALERT_WINDOW`) con un clic.
+* **Instalador de APKs** con barra de progreso.
 
-### 🎮 4. Control Remoto Avanzado
-* **Navegación de Hardware:** Emulación física de los botones Volver (◀️), Inicio (⚫) y Apps Recientes (⏹️).
-* **Teclas Especiales:** Power (🔌), Vol+ (🔊) y Vol- (🔉).
-* **Ajuste de Brillo:** Slider para calibrar el brillo real de la pantalla del dispositivo Android.
-* **Teclado Remoto:** Envía texto escrito en la Mac directamente al dispositivo móvil (ideal para contraseñas o campos de texto complejos).
-* **Grabador de Pantalla:** Graba hasta 3 minutos de video MP4 en la tablet, detén la grabación y el archivo se transferirá automáticamente a tu Escritorio (`~/Desktop`) y se abrirá.
+### 🎮 4. Control remoto
+* **Navegación:** Volver, Inicio y Recientes, más cruceta direccional con OK.
+* **Brillo:** slider para ajustar el brillo real del dispositivo.
+* **Acciones rápidas:** ajustes de fecha y hora, sincronizar hora, activar/desactivar WiFi y datos móviles, captura de pantalla y apagado.
 
-### 📝 5. Consola y Diagnóstico Logcat
-* **Logcat en Vivo (Multihilo):** Lectura continua de logs de Android sin colgar la interfaz gráfica de usuario.
-* **Filtro Inteligente por App (PID):** Filtra los logs en tiempo real para mostrar exclusivamente lo que ocurre dentro de la aplicación seleccionada, buscando su ID de proceso (PID) de forma automática.
-* **Filtros Adicionales:** Filtros de severidad (Verbose, Debug, Info, Warning, Error) y filtro rápido por texto de búsqueda.
-* **Terminales macOS Nativas:** Abre ventanas externas del Terminal nativo de macOS ejecutando `adb shell` o `adb logcat` a través de AppleScript.
-* **Consola ADB Libre:** Caja de comandos para escribir y ejecutar cualquier instrucción de ADB y ver su respuesta estructurada.
+### 📝 5. Consola y Logcat
+* **Logcat en vivo** en un hilo aparte, sin bloquear la interfaz.
+* **Filtros:** nivel de severidad (Verbose, Debug, Info, Warning, Error), texto libre y "App seleccionada" (filtra por el proceso de la app).
+* **Utilidades:** limpiar y guardar logs; la consola se puede contraer.
+* **Comandos ADB:** caja de comandos para ejecutar instrucciones y ver su salida.
+
+### 🔎 6. Zoom de Interfaz en Tiempo Real
+* **Atajos:** `Cmd +` / `Cmd -` para acercar o alejar y `Cmd 0` para restablecer (en otros sistemas, `Ctrl`).
+* **Rango:** de 0.8x a 1.6x en pasos de 0.1. Se aplica al instante, sin reiniciar la aplicación.
+* **Persistente:** el valor se guarda como `ui_scale` en `config.json` y se restaura al abrir la app.
 
 ---
 
@@ -52,7 +50,7 @@ Antes de ejecutar el programa en tu Mac, asegúrate de tener instalado:
 3. **Scrcpy:**
    * Puedes instalarlo mediante Homebrew con: `brew install scrcpy`
 
-*Nota: El programa buscará automáticamente los ejecutables `adb` y `scrcpy` en `/usr/local/bin/`. Si se instalaron en otra ubicación global, asegúrate de que estén mapeados en tu `$PATH`.*
+*Nota: En macOS el programa busca `adb` y `scrcpy` en `/usr/local/bin/` y `/opt/homebrew/bin/`, y luego en el `$PATH`.*
 
 ---
 
@@ -83,16 +81,19 @@ python3 main.py
 ```
 
 ### Primeros pasos recomendados:
-1. Conecta tu tablet Android por USB y asegúrate de que la **Depuración USB** esté activa en el dispositivo.
-2. Abre la app, el selector cargará automáticamente tu dispositivo móvil como `Conectado` (con indicador verde en la barra lateral).
-3. Si deseas usarlo de forma inalámbrica, ve a la pestaña **Conexión Inalámbrica** o haz clic en **⚡ Auto-Wireless** en la barra lateral.
-4. El programa detectará la IP de tu red, habilitará el modo WiFi y te indicará cuando sea seguro retirar el cable USB.
+1. Conecta tu dispositivo Android por USB y activa la **Depuración USB**.
+2. Abre la app: el selector de la barra lateral cargará el dispositivo automáticamente.
+3. Para usarlo por WiFi, escribe `IP:puerto` en el campo de conexión de la barra lateral y pulsa Enter.
+4. Navega entre **Dashboard**, **Aplicaciones** y **Control remoto**, y usa la consola inferior para ver logs.
 
 ---
 
 ## 📁 Archivos del Proyecto
 
-* **[main.py](file:///Users/formosecuador/Documents/AppManager/main.py):** Código fuente de la interfaz gráfica y la lógica ADB multihilo.
-* **[config.json](file:///Users/formosecuador/Documents/AppManager/config.json):** Almacena las aplicaciones favoritas que deseas controlar. Se actualiza dinámicamente desde la interfaz.
+* **[main.py](file:///Users/formosecuador/Documents/AppManager/main.py):** Punto de entrada; aplica el zoom guardado y abre la ventana.
+* **`ui/`:** Ventana principal, tema (colores, fuentes y dimensiones), paneles y pestañas (CustomTkinter).
+* **`appManager3.py`:** Versión anterior en Tkinter, conservada como referencia.
+* **`core/`:** Operaciones ADB/Scrcpy (`adb_manager.py`) y ajustes de interfaz (`ui_settings.py`).
+* **[config.json](file:///Users/formosecuador/Documents/AppManager/config.json):** Guarda el nivel de zoom (`ui_scale`) y el listado de aplicaciones de la versión anterior.
 * **[requirements.txt](file:///Users/formosecuador/Documents/AppManager/requirements.txt):** Contiene las librerías necesarias de Python.
 * **[.gitignore](file:///Users/formosecuador/Documents/AppManager/.gitignore):** Archivo de exclusión para evitar subir archivos locales (`venv/`, capturas, logs temporales) a Git.
