@@ -167,7 +167,7 @@ class App(ctk.CTk):
         self.console.grid(row=1, column=1, sticky="nsew")
 
     def _emit(self, msg: str, raw: bool = False):
-        self._emit((msg, raw))
+        self._log_queue.put((msg, raw))
 
     def _show_view(self, view_id: str):
         self._current_view = view_id
